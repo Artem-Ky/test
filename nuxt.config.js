@@ -8,11 +8,7 @@ export default {
   },
   css: [
     "~assets/main.scss"
-  ],
-  // serverMiddleware: [
-  //   { path: '/api/mos', handler: '~/middleware/fetchMiddleware.js' },
-  //   { path: '/api/lenta', handler: '~/middleware/fetchMiddleware.js' },
-  // ],   
+  ],  
   head: {
     title: 'test3',
     meta: [
