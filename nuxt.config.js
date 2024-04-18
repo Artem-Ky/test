@@ -1,6 +1,6 @@
 import {resolve} from "path"
 
-module.exports = {
+export default {
   mode: "universal",
   components: true,
   alias: {
@@ -9,6 +9,10 @@ module.exports = {
   css: [
     "~assets/main.scss"
   ],
+  // serverMiddleware: [
+  //   { path: '/api/mos', handler: '~/middleware/fetchMiddleware.js' },
+  //   { path: '/api/lenta', handler: '~/middleware/fetchMiddleware.js' },
+  // ],   
   head: {
     title: 'test3',
     meta: [
@@ -22,10 +26,10 @@ module.exports = {
   },
   loading: { color: '#3B8070' },
   plugins: [
-
   ],
   modules: [
-
+    "@nuxtjs/axios",
+    
   ],
   build: {
     extend (config, { isDev, isClient }) {
