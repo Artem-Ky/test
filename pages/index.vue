@@ -17,7 +17,7 @@
     <div class="news">
       <ul>
         <li
-          v-for="newsItem in news"
+          v-for="newsItem in newsData"
           :key="newsItem.link"
           class="gridCard"
         >
@@ -33,17 +33,16 @@
         </li>
       </ul>
     </div>
-       <!-- Пагинация -->
-        <div class="news-list__pagination">
-      <!-- Кнопки пагинации -->
-        </div>
   </section>
 </template>
 
-<script>
-import xml2js from "xml2js";
-import shuffleArray from "~/utils/shuffleArray";
+<script setup>
+import axios from 'axios';
+import xml2js from 'xml2js';
+import { useAsyncData } from 'nuxt/app';
 import { format } from 'date-fns';
+import shuffleArray from "~/utils/shuffleArray";
+let news = [];
 function truncateText(text, maxLength) {
   const cleanText = text.replace(/<\/?[^>]+(>|$)/g, "");
   if (cleanText.length > maxLength) {
@@ -51,56 +50,49 @@ function truncateText(text, maxLength) {
   }
   return cleanText;
 }
+const parseString = (xml) => new Promise((resolve, reject) => {
+  const parser = new xml2js.Parser();
+  parser.parseString(xml, (err, result) => {
+    if (err) reject(err);
+    else resolve(result);
+  });
+});
+const fetchNews = async () => {
+  try {
+    const [responseMos, responseLenta] = await Promise.all([
+      axios.get("https://www.mos.ru/rss", { responseType: "text" }),
+      axios.get("https://lenta.ru/rss/news", { responseType: "text" }),
+    ]);
+    const [parsedMos, parsedLenta] = await Promise.all([
+      parseString(responseMos.data),
+      parseString(responseLenta.data),
+    ]);
+    const itemsMos = parsedMos.rss.channel[0].item.map((item) => ({
+      source: "www.mos.ru",
+      title: item.title[0],
+      link: item.link[0],
+      pubDate: format(new Date(item.pubDate[0]), 'yyyy-MM-dd'),
+      description: item.description && item.description[0].trim() ? truncateText(item.description[0], 95) : item.title[0],
+      imageUrl: item.enclosure ? item.enclosure[0].$.url : null,
+    }));
 
-export default {
-  async asyncData({ $axios }) {
-    try {
-      const [responseMos, responseLenta] = await Promise.all([
-        $axios.get("https://www.mos.ru/rss", { responseType: "text" }),
-        $axios.get("https://lenta.ru/rss/news", { responseType: "text" }),
-      ]);
-
-      const parser = new xml2js.Parser();
-      const parseString = (xml) =>
-        new Promise((resolve, reject) => {
-          parser.parseString(xml, (err, result) => {
-            if (err) reject(err);
-            else resolve(result);
-          });
-        });
-
-      const [parsedMos, parsedLenta] = await Promise.all([
-        parseString(responseMos.data),
-        parseString(responseLenta.data),
-      ]);
-
-      const itemsMos = parsedMos.rss.channel[0].item.map((item) => ({
-        source: "www.mos.ru",
-        title: item.title[0],
-        link: item.link[0],
-        pubDate: format(new Date(item.pubDate), 'yyyy-MM-dd'),
-        description: item.description ? truncateText(item.description[0], 95) : null,
-        imageUrl: item.enclosure ? item.enclosure[0].$.url : null,
-      }));
-
-      const itemsLenta = parsedLenta.rss.channel[0].item.map((item) => ({
+    const itemsLenta = parsedLenta.rss.channel[0].item.map((item) => ({
       source: "www.lenta.ru",
       title: item.title[0],
       link: item.link[0],
-      pubDate: format(new Date(item.pubDate), 'yyyy-MM-dd'),
+      pubDate: format(new Date(item.pubDate[0]), 'yyyy-MM-dd'),
       description: item.description && item.description[0].trim() ? truncateText(item.description[0], 95) : item.title[0],
-      imageUrl: item.enclosure[0].$.url,
-      }));
-
-      const news = shuffleArray([...itemsMos, ...itemsLenta]);
-
-      return { news };
-    } catch (error) {
-      console.error(error);
-      return { news: [] };
-    }
-  },
+      imageUrl: item.enclosure && item.enclosure[0] ? item.enclosure[0].$.url : null,
+    }));
+    news = shuffleArray([...itemsMos, ...itemsLenta]);
+    return news;
+  } catch (error) {
+    console.error('Ошибка при получении новостей:', error);
+    throw error;
+  }
 };
-</script>
 
-<style></style>
+
+const { data: newsData, error, refresh } = useAsyncData('news', fetchNews);
+
+</script>

@@ -2,7 +2,7 @@
   <div>
     <main>
       <div class="container">
-        <nuxt/>
+        <NuxtPage/>
       </div>
     </main>
   </div>
