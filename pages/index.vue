@@ -50,6 +50,9 @@ function truncateText(text, maxLength) {
   }
   return cleanText;
 }
+function cleanTag(text) {
+  return text.replace(/<\/?[^>]+(>|$)/g, "").trim();
+}
 const parseString = (xml) => new Promise((resolve, reject) => {
   const parser = new xml2js.Parser();
   parser.parseString(xml, (err, result) => {
@@ -67,16 +70,22 @@ const fetchNews = async () => {
       parseString(responseMos.data),
       parseString(responseLenta.data),
     ]);
-    const itemsMos = parsedMos.rss.channel[0].item.map((item) => ({
+    const itemsMos = parsedMos.rss.channel[0].item
+    .filter(item => item.description != null) //закоментировать если нужны новости без описания
+    .map((item) => ({
       source: "www.mos.ru",
       title: item.title[0],
       link: item.link[0],
       pubDate: format(new Date(item.pubDate[0]), 'yyyy-MM-dd'),
-      description: item.description && item.description[0].trim() ? truncateText(item.description[0], 95) : item.title[0],
+      description: item.description ? truncateText(item.description[0], 95) : item.title[0],
       imageUrl: item.enclosure ? item.enclosure[0].$.url : null,
     }));
 
-    const itemsLenta = parsedLenta.rss.channel[0].item.map((item) => ({
+    console.log(parsedLenta.rss.channel[0])
+    const itemsLenta = parsedLenta.rss.channel[0].item
+    //закоментировать если нужны новости без описания
+    .filter(item => item.description && cleanTag(item.description[0]) && item.description[0].trim())
+    .map((item) => ({
       source: "www.lenta.ru",
       title: item.title[0],
       link: item.link[0],
