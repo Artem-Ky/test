@@ -1,20 +1,4 @@
 <template>
-  <div>
-    <main>
-      <div class="container">
-        <NuxtPage/>
-      </div>
-    </main>
-  </div>
+  <slot>
+  </slot>
 </template>
-
-<script>
-export default {
-  
-}
-</script>
-
-<style>
-
-</style>
-
