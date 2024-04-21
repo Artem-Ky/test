@@ -20,6 +20,9 @@ export default defineNuxtConfig({
   loading: { color: '#3B8070' },
   modules: [
   ],
+  plugins: [
+    '~/plugins/vuex-store.js'
+  ],
   vite: {
     resolve: {
       alias: {
