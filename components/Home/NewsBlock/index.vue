@@ -2,7 +2,7 @@
   <div class="news">
     <ul>
       <li
-        v-for="newsItem in newsData"
+        v-for="newsItem in paginatedNews"
         :key="newsItem.link"
         :class="viewStateContainer"
       >
@@ -19,22 +19,34 @@
         <time :class="viewStatePubDate">{{ newsItem.pubDate }}</time>
       </li>
     </ul>
+    <paginator :currentPage="page" :limit="limit" :totalPages="totalPages" @onPaginate="HandlerPaginate"/>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted } from 'vue';
 import { useStore } from 'vuex';
-import { useAsyncData } from 'nuxt/app';
+import { useAsyncData, useRoute, useRouter } from 'nuxt/app';
 import { fetchNews } from '~/utils/api';
 
 const store = useStore();
+const router = useRouter();
+const route = useRoute();
+const page = computed(() => {
+  const pageQuery = parseInt(route.query._page, 10);
+  return isNaN(pageQuery) ? 1 : pageQuery;
+});
+const limit = computed(() => store.state.pageView.limit);
 
-
-const { data: newsData, error, refresh } = useAsyncData('news', fetchNews);
-
+const { data: newsData } = useAsyncData('news', () => fetchNews(page.value, limit.value));
+store.dispatch('news/setNewsState', newsData);
 
 const viewState = computed(() => store.state.pageView.viewState);
+const totalPages = computed(() => {
+  return store.state.pageView.totalFound > limit.value
+    ? Math.ceil(store.state.pageView.totalFound / limit.value)
+    : 1;
+});
 
 
 const viewStateContainer = computed(() => viewState.value === 'grid' ? 'gridCard' : 'listCard');
@@ -45,10 +57,44 @@ const viewStateLink = computed(() => viewState.value === 'grid' ? 'gridCard__lin
 const viewStateSource = computed(() => viewState.value === 'grid' ? 'gridCard__source' : 'listCard__source');
 const viewStatePubDate = computed(() => viewState.value === 'grid' ? 'gridCard__pubdate' : 'listCard__pubdate');
 
+
+
 onMounted(() => {
 if (process.client) {
   const storedViewState = localStorage.getItem('viewState') || 'grid';
   store.dispatch('pageView/updateViewState', storedViewState);
 }
 });
+watch(newsData, (currentData) => {
+  if (currentData && currentData.length) {
+    store.dispatch('pageView/setTotalFound', currentData.length);
+  }
+}, { immediate: true });
+
+
+const paginatedNews = computed(() => {
+  const start = (page.value - 1) * limit.value;
+  return store.state.news.news.slice(start, start + limit.value);
+});
+
+
+const HandlerPaginate = (newPage) => {
+  if (newPage === 1) {
+    router.push({
+      path: '/',
+      query: { ...route.query, _page: undefined }
+    }).then(() => {
+      store.dispatch('pageView/setPageState', newPage);
+    });
+  } else {
+    router.push({
+      path: '/',
+      query: { ...route.query, _page: newPage }
+    }).then(() => {
+      store.dispatch('pageView/setPageState', newPage);
+    });
+  }
+};
+
+
 </script>
