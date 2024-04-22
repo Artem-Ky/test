@@ -368,9 +368,31 @@ button, input {
             right: 5px;
         };
     }
-
-
 }
 
-
+}
+.paginator {
+    display: flex;
+    justify-content: center;
+    color:#000000;
+    &__item{
+        list-style: none;
+        display: inline-block;
+        margin-left: 15px;
+        margin-top: 40px;
+        font-family: Arial, sans-serif;
+        font-weight: 400;
+        font-size: 18px;
+        line-height: 20px;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        &:first-of-type{
+            margin-left: 0;
+        }
+        &-active{
+            color:#0029FF;
+        }
+    }
 }
